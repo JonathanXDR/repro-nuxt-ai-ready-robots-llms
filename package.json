@@ -9,8 +9,12 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@nuxtjs/robots": "6.1.0",
     "nuxt": "4.4.8",
     "nuxt-ai-ready": "1.4.0",
     "vue": "3.5.38"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.10.0"
   }
 }

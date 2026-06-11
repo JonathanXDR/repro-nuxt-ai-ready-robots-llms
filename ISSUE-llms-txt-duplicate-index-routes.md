@@ -8,6 +8,7 @@ nuxt-ai-ready 1.4.0
 
 - Nuxt 4.4.8
 - Prerendered pages (`nitro.prerender.crawlLinks: true`)
+- `site.trailingSlash: true` (required to trigger the bug)
 
 ### Reproduction
 
@@ -30,12 +31,13 @@ Each page appears once, under its canonical URL:
 
 ### Actual behavior
 
-Pages appear twice, once with a trailing `index` variant that does not exist as a route and returns 404 when fetched:
+Pages appear up to three times, including a trailing `index` variant that does not exist as a route and returns 404 when fetched (verified output of this repro):
 
 ```
-- [Home](/index)
-- [About](/about)
-- [About](/about/index)
+- /
+- /about
+- /about/
+- /about/index
 ```
 
 ### Root cause

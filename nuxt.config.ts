@@ -3,12 +3,13 @@ export default defineNuxtConfig({
   site: {
     url: 'https://example.com',
     name: 'AI Ready repro',
+    trailingSlash: true,
   },
   compatibilityDate: '2026-03-21',
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ['/'],
+      routes: ['/', '/about/'],
     },
   },
   // Bug 1: with `contentSignal` set as an object and NO top-level
