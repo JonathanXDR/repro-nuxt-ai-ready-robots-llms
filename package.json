@@ -1,0 +1,16 @@
+{
+  "name": "repro-nuxt-ai-ready-robots-llms",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "nuxt": "4.4.8",
+    "nuxt-ai-ready": "1.4.0",
+    "vue": "3.5.38"
+  }
+}
