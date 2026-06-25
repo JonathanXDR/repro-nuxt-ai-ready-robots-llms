@@ -19,8 +19,6 @@ The crash happens during `nuxt prepare`, before any prerender or database work, 
 
 https://stackblitz.com/github/JonathanXDR/repro-nuxt-ai-ready-robots-llms
 
-The default `startCommand` runs `nuxt prepare` and the crash above is printed in the terminal.
-
 ## Expected behavior
 
 A missing `robots` key should be treated the same as an empty `robots: {}`. The module should default the options and push its content-signal group without throwing.
