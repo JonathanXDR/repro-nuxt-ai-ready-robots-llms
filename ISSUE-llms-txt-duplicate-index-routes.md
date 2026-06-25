@@ -1,67 +1,57 @@
-# Bug: llms.txt lists every page twice, once under a non-existent `/.../index` URL that returns 404
+# llms.txt lists every nested page under a non-existent /.../index URL
 
-### Module version
+## The bug
 
-nuxt-ai-ready 1.4.0
-
-### Environment
-
-- Nuxt 4.4.8
-- Prerendered pages (`nitro.prerender.crawlLinks: true`)
-- `site.trailingSlash: true` (required to trigger the bug)
-
-### Reproduction
-
-This repository. Add `robots: {}` to `nuxt.config.ts` first (separate bug, see ISSUE-robots-undefined-crash.md), then:
-
-```sh
-npm install
-npm run generate
-cat .output/public/llms.txt
-```
-
-### Expected behavior
-
-Each page appears once, under its canonical URL:
+With `site.trailingSlash: true` and prerendered pages, `llms.txt` lists each nested page several times, including a trailing `index` variant that is not a real route. For a site with just `/` and `/about`, the generated `.output/public/llms.txt` contains:
 
 ```
-- [Home](/)
-- [About](/about)
-```
+## Pages
 
-### Actual behavior
-
-Pages appear up to three times, including a trailing `index` variant that does not exist as a route and returns 404 when fetched (verified output of this repro):
-
-```
 - /
+
 - /about
 - /about/
 - /about/index
 ```
 
-### Root cause
+`/about/index` is not a navigable route. Only `/about/` exists (its `index.html` is the directory index). `llms-full.txt` is affected the same way, emitting a `### /about/index` section sourced from `https://example.com/about/index`.
 
-In `dist/module.mjs` (1.4.0), the `prerender:generate` handler normalizes only the bare root:
+The root route is normalized correctly (`/index` becomes `/`), but nested routes keep their `index` suffix.
 
-```js
-if (pageRoute === "/index") pageRoute = "/";
+## To reproduce
+
+https://stackblitz.com/github/JonathanXDR/repro-nuxt-ai-ready-robots-llms
+
+## Expected behavior
+
+Each page should appear once under its canonical URL, with the `/index` suffix stripped for nested routes just like it is for the root:
+
+```
+## Pages
+
+- /
+- /about
 ```
 
-Nested prerender outputs like `/about/index` keep their `index` suffix and get inserted into the page database as separate entries next to `/about`, so the llms.txt builder emits both.
+## Additional context
 
-### Suggested fix
-
-Normalize the suffix for every route, mirroring the error-route normalization already present in the same file:
+Root cause in `node_modules/nuxt-ai-ready/dist/module.mjs` (1.4.0). The `prerender:generate` handler normalizes only the bare root:
 
 ```js
-pageRoute = pageRoute.replace(/\/index$/, "") || "/";
+// line 294
+let pageRoute = route.route.replace(RE_MD_EXT, "");
+if (pageRoute === "/index")   // line 295
+  pageRoute = "/";            // line 296
 ```
 
-### Possibly related
+Nested prerender outputs like `/about/index` keep their `index` suffix and get inserted into the page database as separate entries next to `/about`, so the llms.txt builder emits both. The error-route branch in the same handler already does the correct normalization (line 287 uses `RE_INDEX_SUFFIX` `/\/index$/`), so applying the same regex here fixes it:
 
-Issue #14 ("prerendering throws 404 on nested index.md routes") looks adjacent: the same un-normalized `/index` route variants would also produce the 404ing nested `index.md` markdown routes.
+```js
+let pageRoute = route.route.replace(RE_MD_EXT, "").replace(/\/index$/, "") || "/";
+```
 
-### Additional observation (cache staleness)
+Reproduce caveat: the bug is observed in the build output of `nuxt generate`. The build-time page-database writer (`initCrawler`, module.mjs line 87) imports `better-sqlite3`, a native addon that does not load in WebContainer. So the live StackBlitz instead reproduces the companion module-setup crash (see ISSUE-robots-undefined-crash.md) which happens earlier and is native-free. To see this llms.txt bug, run the repro on a normal machine: add `robots: {}` to `nuxt.config.ts` to bypass that crash, `npm i better-sqlite3`, then `npm run generate && cat .output/public/llms.txt`.
 
-The page database persisted under `node_modules/.cache/nuxt-seo/ai-ready/routes` is keyed by content hash only. When `NUXT_SITE_URL` changes between builds (for example preview vs production), previously cached entries keep their old absolute origin and page set, so llms.txt is generated with the previous environment's URLs until the cache directory is deleted manually. Including the site origin in the cache key (or invalidating on origin change) would avoid baking preview URLs into production output on build machines with persistent caches.
+Cache staleness note: the page database persisted under `node_modules/.cache/nuxt-seo/ai-ready/routes` is keyed by content hash only. When `NUXT_SITE_URL` changes between builds (preview vs production), cached entries keep their old absolute origin and page set, so llms.txt is generated with the previous environment's URLs until the cache directory is deleted. Including the site origin in the cache key would avoid baking preview URLs into production output on build machines with persistent caches.
+
+Environment: nuxt-ai-ready 1.4.0, Nuxt 4.4.8, Node 24, `site.trailingSlash: true`.

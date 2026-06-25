@@ -6,15 +6,13 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "postinstall": "nuxt prepare"
+    "repro": "nuxt prepare"
   },
   "devDependencies": {
+    "@mdream/js": "1.4.1",
     "@nuxtjs/robots": "6.1.0",
     "nuxt": "4.4.8",
     "nuxt-ai-ready": "1.4.0",
     "vue": "3.5.38"
-  },
-  "dependencies": {
-    "better-sqlite3": "12.10.0"
   }
 }
